@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bhagya Achievers — AI Sales Coach</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:#6a3fd6;color:#fff;overflow:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 18% 28%,#8159ea 0,transparent 38%),radial-gradient(circle at 82% 72%,#5326c0 0,transparent 42%)}
+.dots{position:fixed;inset:0;z-index:-1;opacity:.12;background-image:radial-gradient(#fff 1.5px,transparent 1.5px);background-size:34px 34px}
+.screen{position:fixed;inset:0;display:none;flex-direction:column}
+.screen.on{display:flex}
+#home{align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center}
+#home h1{font-size:clamp(28px,4vw,46px)}
+#home p{opacity:.85;font-size:17px}
+.panel{background:rgba(255,255,255,.12);border-radius:22px;padding:26px;width:min(520px,94vw);display:flex;flex-direction:column;gap:14px;text-align:left}
+.panel label{font-size:14px;opacity:.9}
+.panel input[type=text]{font:inherit;font-size:17px;padding:13px 16px;border-radius:12px;border:0;outline:none}
+.drop{border:2px dashed rgba(255,255,255,.6);border-radius:14px;padding:22px;text-align:center;cursor:pointer;font-size:16px}
+.drop.has{border-style:solid;background:rgba(255,255,255,.1)}
+.big{font:inherit;font-size:19px;font-weight:700;border:0;border-radius:999px;padding:16px 34px;cursor:pointer;background:#fff;color:#5a2fc4;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.big:disabled{opacity:.5;cursor:default}
+.steps{display:flex;flex-direction:column;gap:6px;font-size:15px}
+.steps div{opacity:.45}.steps div.on{opacity:1}.steps div.done{opacity:.8}
+.err{color:#ffd0d8;font-size:14px;min-height:18px}
+.hint{font-size:13px;opacity:.75}
+#stage{padding:2vh 4vw}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px}
+.badge{background:rgba(255,255,255,.18);padding:6px 14px;border-radius:999px}
+.arena{flex:1;display:grid;grid-template-rows:1fr 1fr;gap:2vh;align-items:center}
+.row{display:flex;align-items:center;gap:2.5vw}
+.row.person{flex-direction:row-reverse}
+.col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.avatar{width:clamp(100px,15vh,190px);height:clamp(100px,15vh,190px);border-radius:50%;border:7px solid #fff;display:flex;align-items:center;justify-content:center;transition:transform .12s,box-shadow .2s;flex:none}
+.bot .avatar{background:#2bb8c8}.person .avatar{background:#f08aa0}
+.avatar.live{box-shadow:0 0 0 14px rgba(255,255,255,.16),0 0 60px rgba(255,255,255,.55)}
+.avatar svg{width:62%}
+.name{font-weight:600}
+.bubble{background:#fff;border-radius:26px;padding:16px 22px;display:flex;align-items:center;gap:14px;box-shadow:0 10px 28px rgba(0,0,0,.2);flex:none}
+.bot .bubble{border-bottom-left-radius:5px}.person .bubble{border-bottom-right-radius:5px}
+.bubble svg{width:30px;height:30px}
+canvas{width:clamp(120px,18vw,260px);height:54px;display:block}
+.caption{flex:1;font-size:clamp(16px,2.1vh,23px);line-height:1.55;background:rgba(0,0,0,.14);border-radius:18px;padding:16px 22px;min-height:80px;max-height:30vh;overflow:auto}
+.caption:empty::before{content:attr(data-ph);opacity:.5}
+.bar{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;padding:1.2vh 0}
+.btn{font:inherit;font-weight:600;font-size:15px;border:0;border-radius:999px;padding:12px 22px;cursor:pointer;background:#fff;color:#5a2fc4}
+.btn.rec{background:#ff4f7b;color:#fff;font-size:17px;padding:14px 28px}
+.btn.ghost{background:rgba(255,255,255,.18);color:#fff}
+.btn:disabled{opacity:.5}
+.type{display:flex;gap:8px;width:min(680px,92vw)}
+.type input{flex:1;font:inherit;font-size:16px;padding:12px 18px;border-radius:999px;border:0;outline:none}
+.status{text-align:center;font-size:14px;opacity:.85;min-height:18px}
+.progress{height:6px;background:rgba(255,255,255,.2);border-radius:9px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;width:0;background:#ffd76a;transition:width .4s}
+#report{position:fixed;inset:6vh 8vw;background:#fff;color:#222;border-radius:20px;padding:26px;overflow:auto;display:none;z-index:5;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+#report h2{margin-bottom:10px;color:#5a2fc4}#report li{margin:8px 0 8px 18px;line-height:1.5}
+#report pre{white-space:pre-wrap;font-size:13px;background:#f4f1fb;padding:12px;border-radius:10px;max-height:40vh;overflow:auto}
+</style>
+</head>
+<body>
+<div class="dots"></div>
+
+<section class="screen on" id="home">
+  <h1>🎧 Bhagya Achievers — AI Sales Coach</h1>
+  <p>Apni call recording upload karo — Coach sunke aapko bol ke guide karega</p>
+  <div class="panel">
+    <label>Aapka naam</label>
+    <input type="text" id="agentIn" placeholder="Jaise: Kamal">
+    <label>Call recording (mp3 / wav / m4a / mpeg)</label>
+    <div class="drop" id="drop">📤 Yahan click karke recording chuno</div>
+    <input type="file" id="fileIn" accept="audio/*,.mpeg,.mp3,.wav,.m4a,.ogg,.opus" hidden>
+    <button class="big" id="startBtn" disabled>▶ Coach, meri call suniye</button>
+    <div class="steps" id="steps">
+      <div id="s1">1️⃣ Recording upload</div>
+      <div id="s2">2️⃣ Call ko text mein badalna (transcript)</div>
+      <div id="s3">3️⃣ Coach call check kar raha hai</div>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="hint" id="voiceInfo">Best Hindi awaaz ke liye Microsoft Edge use karein</div>
+  </div>
+</section>
+
+<section class="screen" id="stage">
+  <div class="top">
+    <span class="badge" id="modeBadge">📋 Call Feedback</span>
+    <span class="badge" id="scoreBadge"></span>
+  </div>
+  <div class="progress"><i id="prog"></i></div>
+  <div class="arena">
+    <div class="row bot">
+      <div class="col">
+        <div class="avatar" id="botAv"><svg viewBox="0 0 100 100"><line x1="30" y1="12" x2="34" y2="26" stroke="#fff" stroke-width="4"/><line x1="70" y1="12" x2="66" y2="26" stroke="#fff" stroke-width="4"/><circle cx="30" cy="10" r="5" fill="#fff"/><circle cx="70" cy="10" r="5" fill="#fff"/><rect x="18" y="24" width="64" height="48" rx="18" fill="#fff"/><rect x="26" y="32" width="48" height="30" rx="12" fill="#1f2340"/><circle cx="40" cy="45" r="5" fill="#4ce0f0"/><circle cx="60" cy="45" r="5" fill="#4ce0f0"/><path d="M42 54 Q50 60 58 54" stroke="#4ce0f0" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="30" y="74" width="40" height="22" rx="10" fill="#fff"/></svg></div>
+        <div class="name">AI Sales Coach</div>
+      </div>
+      <div class="bubble"><svg viewBox="0 0 24 24" fill="#2bb8c8"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0" stroke="#2bb8c8" stroke-width="2" fill="none"/><rect x="11" y="18" width="2" height="4"/></svg><canvas id="botWave"></canvas></div>
+      <div class="caption" id="botCap" data-ph="Coach yahan bolega…"></div>
+    </div>
+    <div class="row person">
+      <div class="col">
+        <div class="avatar" id="personAv"><svg viewBox="0 0 100 100"><circle cx="50" cy="36" r="20" fill="#fff"/><path d="M14 96 Q50 50 86 96Z" fill="#fff"/></svg></div>
+        <div class="name" id="agentName">Agent</div>
+      </div>
+      <div class="bubble"><svg viewBox="0 0 24 24" fill="#f0567c"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0" stroke="#f0567c" stroke-width="2" fill="none"/><rect x="11" y="18" width="2" height="4"/></svg><canvas id="personWave"></canvas></div>
+      <div class="caption" id="personCap" data-ph="Aapka sawaal yahan dikhega…"></div>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+  <div class="bar">
+    <button class="btn ghost" id="pauseBtn">⏸ Roko</button>
+    <button class="btn ghost" id="replayBtn">🔁 Feedback dobara</button>
+    <button class="btn rec" id="micBtn">🎤 Bol ke poochho</button>
+    <button class="btn ghost" id="reportBtn">📄 Report</button>
+    <button class="btn ghost" id="newBtn">➕ Nayi call</button>
+    <button class="btn ghost" id="fsBtn">⛶</button>
+  </div>
+  <div class="bar" style="padding-top:0"><div class="type"><input id="typeIn" placeholder="Ya type karke poochho…"><button class="btn" id="sendBtn">Bhejo</button></div></div>
+</section>
+
+<div id="report"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const S={agent:"",file:null,transcript:"",fb:null,history:[],idx:0,playing:false};
+
+/* ---------- Home ---------- */
+$("drop").onclick=()=>$("fileIn").click();
+$("fileIn").onchange=()=>{const f=$("fileIn").files[0];if(!f)return;S.file=f;
+  $("drop").textContent="🎵 "+f.name+" ("+(f.size/1048576).toFixed(1)+" MB)";$("drop").classList.add("has");check()};
+$("agentIn").oninput=check;
+function check(){$("startBtn").disabled=!(S.file&&$("agentIn").value.trim())}
+function step(n,state){$("s"+n).className=state}
+function fail(m){$("err").textContent="⚠️ "+m;$("startBtn").disabled=false}
+
+$("startBtn").onclick=async()=>{
+  goFS();
+  S.agent=$("agentIn").value.trim();$("err").textContent="";$("startBtn").disabled=true;
+  if(S.file.size>4.4*1048576){fail("Recording 4.4 MB se badi hai. Knowlarity se normal (chhoti) MP3 download karke try karo.");return}
+  try{
+    step(1,"on");step(2,"");step(3,"");
+    step(1,"done");step(2,"on");
+    const t=await fetch("/api/transcribe",{method:"POST",headers:{"content-type":S.file.type||"audio/mpeg","x-file-name":encodeURIComponent(S.file.name)},body:S.file});
+    const td=await t.json();if(!t.ok)throw new Error(td.error||"Transcript nahi bana");
+    S.transcript=td.transcript;
+    step(2,"done");step(3,"on");
+    const c=await fetch("/api/coach",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({mode:"audit",agent:S.agent,transcript:S.transcript})});
+    const cd=await c.json();if(!c.ok)throw new Error(cd.error||"Audit nahi hua");
+    if(!cd.parts||!cd.parts.length)throw new Error("Coach ka feedback khali aaya, dobara try karo");
+    S.fb=cd;step(3,"done");startStage();
+  }catch(e){fail(e.message)}
+};
+
+/* ---------- Stage ---------- */
+function show(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));$(id).classList.add("on")}
+function goFS(){const d=document.documentElement;try{(d.requestFullscreen||d.webkitRequestFullscreen).call(d)}catch(e){}}
+function startStage(){
+  show("stage");$("agentName").textContent=S.agent;$("scoreBadge").textContent="Score: "+S.fb.score+" / 10";
+  S.history=[];S.idx=0;S.playing=true;$("modeBadge").textContent="📋 Call Feedback";playPart()}
+function playPart(){
+  const P=S.fb.parts;
+  if(S.idx>=P.length){S.playing=false;$("modeBadge").textContent="❓ Sawaal-Jawab";$("status").textContent="Feedback poora ✅ — mic dabake sawaal poochiye";return}
+  const p=P[S.idx];$("botCap").textContent=p.show;$("prog").style.width=((S.idx+1)/P.length*100)+"%";
+  $("status").textContent="Coach bol rahe hain… ("+(S.idx+1)+"/"+P.length+")";
+  speak(p.say||p.show,()=>{if(S.playing){S.idx++;setTimeout(playPart,400)}})}
+$("replayBtn").onclick=()=>{S.idx=0;S.playing=true;$("modeBadge").textContent="📋 Call Feedback";playPart()};
+$("pauseBtn").onclick=()=>{if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();botSpeaking=false;$("pauseBtn").textContent="▶ Chalao"}
+  else{speechSynthesis.resume();$("pauseBtn").textContent="⏸ Roko"}};
+$("fsBtn").onclick=goFS;
+$("newBtn").onclick=()=>{speechSynthesis.cancel();S.file=null;$("fileIn").value="";$("drop").textContent="📤 Yahan click karke recording chuno";$("drop").classList.remove("has");
+  [1,2,3].forEach(n=>step(n,""));check();show("home")};
+$("reportBtn").onclick=()=>{const r=$("report"),f=S.fb;
+  r.innerHTML=`<h2>📄 ${esc(S.agent)} — Score ${f.score}/10</h2><p>${esc(f.summary||"")}</p>
+  <h3 style="margin-top:14px">✅ Achha kiya</h3><ul>${(f.strengths||[]).map(s=>`<li>${esc(s)}</li>`).join("")}</ul>
+  <h3 style="margin-top:14px">⚠️ Galtiyan</h3><ul>${(f.mistakes||[]).map(m=>`<li><b>${esc(m.time||"")}</b> — ${esc(m.issue)}<br>👉 <i>${esc(m.better)}</i></li>`).join("")}</ul>
+  <h3 style="margin-top:14px">📝 Transcript</h3><pre>${esc(S.transcript)}</pre>
+  <p style="margin-top:14px"><button class="btn" style="background:#5a2fc4;color:#fff" onclick="report.style.display='none'">Band karo</button></p>`;
+  r.style.display="block"};
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+/* ---------- Q&A ---------- */
+async function ask(q){
+  S.playing=false;speechSynthesis.cancel();$("modeBadge").textContent="❓ Sawaal-Jawab";$("personCap").textContent=q;
+  $("botCap").textContent="Soch raha hoon…";$("status").textContent="";
+  try{
+    const r=await fetch("/api/coach",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({mode:"qa",agent:S.agent,question:q,transcript:S.transcript,feedback:S.fb&&S.fb.summary,history:S.history})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error);
+    S.history.push({role:"user",text:q},{role:"coach",text:d.show});
+    $("botCap").textContent=d.show;speak(d.say||d.show,()=>$("status").textContent="Aur kuch poochna hai? 🎤");
+  }catch(e){$("botCap").textContent="⚠️ "+e.message}
+}
+$("sendBtn").onclick=()=>{const t=$("typeIn").value.trim();if(t){$("typeIn").value="";ask(t)}};
+$("typeIn").onkeydown=e=>{if(e.key==="Enter")$("sendBtn").onclick()};
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,listening=false,analyser=null,buf=null;
+async function meter(){try{const s=await navigator.mediaDevices.getUserMedia({audio:true});const ac=new(window.AudioContext||window.webkitAudioContext)();analyser=ac.createAnalyser();analyser.fftSize=64;ac.createMediaStreamSource(s).connect(analyser);buf=new Uint8Array(analyser.frequencyBinCount)}catch(e){}}
+if(SR){rec=new SR();rec.lang="hi-IN";rec.interimResults=true;
+  rec.onresult=e=>{let t="";for(const r of e.results)t+=r[0].transcript;$("personCap").textContent=t;if(e.results[e.results.length-1].isFinal)ask(t)};
+  rec.onend=()=>{listening=false;$("micBtn").disabled=false;$("micBtn").textContent="🎤 Bol ke poochho"};
+  rec.onerror=e=>{$("status").textContent="Mic: "+e.error+" — type karke bhi poochh sakte ho"}}
+$("micBtn").onclick=async()=>{speechSynthesis.cancel();botSpeaking=false;S.playing=false;
+  if(!SR){$("status").textContent="Voice ke liye Edge/Chrome use karo — abhi type karke poochho";return}
+  if(!analyser)await meter();$("personCap").textContent="";listening=true;$("micBtn").disabled=true;$("micBtn").textContent="👂 Sun raha hoon…";$("status").textContent="Boliye…";rec.start()};
+
+/* ---------- Voice ---------- */
+let VOICE=null,botSpeaking=false,keep=null;
+function chooseVoice(){const vs=speechSynthesis.getVoices();
+  for(const p of[/Madhur.*Natural/i,/Swara.*Natural/i,/Madhur/i,/Swara/i,/Google.*(हिन्दी|Hindi)/i,/Hemant|Kalpana/i]){const v=vs.find(x=>p.test(x.name));if(v){VOICE=v;break}}
+  if(!VOICE)VOICE=vs.find(x=>/^hi/i.test(x.lang))||null;
+  $("voiceInfo").textContent=VOICE?"🔊 Voice: "+VOICE.name:"⚠️ Hindi voice nahi mili — Microsoft Edge mein kholo"}
+speechSynthesis.onvoiceschanged=chooseVoice;setTimeout(chooseVoice,400);setTimeout(chooseVoice,1500);
+function speak(text,onEnd){speechSynthesis.cancel();if(!VOICE)chooseVoice();
+  const u=new SpeechSynthesisUtterance(text);if(VOICE){u.voice=VOICE;u.lang=VOICE.lang}else u.lang="hi-IN";u.rate=.98;
+  u.onstart=()=>{botSpeaking=true;clearInterval(keep);keep=setInterval(()=>{if(speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},10000)};
+  u.onend=()=>{botSpeaking=false;clearInterval(keep);onEnd&&onEnd()};
+  u.onerror=()=>{botSpeaking=false;clearInterval(keep)};
+  setTimeout(()=>speechSynthesis.speak(u),120)}
+
+/* ---------- Waveforms ---------- */
+function setup(c){const r=devicePixelRatio||1;c.width=c.clientWidth*r;c.height=c.clientHeight*r;const x=c.getContext("2d");x.setTransform(r,0,0,r,0,0);return x}
+let bx,px;addEventListener("resize",()=>{bx=null});
+const N=30;let bl=Array(N).fill(.05),pl=Array(N).fill(.05);
+function draw(x,c,l,col){const w=c.clientWidth,h=c.clientHeight;if(!w)return;x.clearRect(0,0,w,h);x.fillStyle=col;const bw=w/N;
+  l.forEach((v,i)=>{const bh=Math.max(4,v*h);x.fillRect(i*bw+bw*.22,(h-bh)/2,bw*.56,bh)})}
+(function loop(){
+  if(!bx&&$("botWave").clientWidth){bx=setup($("botWave"));px=setup($("personWave"))}
+  if(listening&&analyser){analyser.getByteFrequencyData(buf);const a=buf.reduce((s,v)=>s+v,0)/buf.length/255;pl.shift();pl.push(Math.min(1,.08+a*2.4*(.6+Math.random()*.8)));$("personAv").style.transform=`scale(${1+a*.3})`}
+  else{pl=pl.map(v=>v*.9+.005);$("personAv").style.transform="scale(1)"}
+  if(botSpeaking){bl.shift();bl.push(.2+Math.random()*.8);$("botAv").style.transform=`scale(${1.03+Math.random()*.05})`}
+  else{bl=bl.map(v=>v*.9+.005);$("botAv").style.transform="scale(1)"}
+  $("botAv").classList.toggle("live",botSpeaking);$("personAv").classList.toggle("live",listening);
+  if(bx){draw(bx,$("botWave"),bl,"#2bb8c8");draw(px,$("personWave"),pl,"#f0567c")}
+  requestAnimationFrame(loop)})();
+</script>
+</body>
+</html>
